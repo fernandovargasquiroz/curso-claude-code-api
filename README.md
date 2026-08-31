@@ -37,7 +37,15 @@ El contrato de comportamiento observable vive en `docs/contrato-api.md`.
    docker compose up -d
    ```
 
-5. Ejecutar la API con Uvicorn:
+5. Aplicar las migraciones de Alembic (lee la conexión de las mismas
+   variables `POSTGRES_*` de `.env`/`.env.example`; asume `POSTGRES_HOST=localhost`
+   porque la API corre en el host, no en un contenedor):
+
+   ```bash
+   uv run alembic upgrade head
+   ```
+
+6. Ejecutar la API con Uvicorn:
 
    ```bash
    uv run uvicorn app.main:app --reload
@@ -45,7 +53,7 @@ El contrato de comportamiento observable vive en `docs/contrato-api.md`.
 
    Verifica que responde en <http://127.0.0.1:8000/health>.
 
-6. Al terminar, detener los servicios:
+7. Al terminar, detener los servicios:
 
    ```bash
    docker compose down
