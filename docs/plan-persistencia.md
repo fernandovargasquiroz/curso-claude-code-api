@@ -57,12 +57,18 @@ ningún endpoint.
 
 ### Incremento 2 — Lectura del catálogo `states` desde la app
 
-Declarar en `app/database.py` (o un módulo nuevo pequeño, p.ej.
-`app/states.py`) la tabla `states` como `sqlalchemy.Table` (Core, reflejando
-exactamente las columnas de la migración: `id`, `code`, `sort_order` — sin
-introducir una capa ORM/declarativa que nadie pidió) y una función que
-devuelva las filas ordenadas por `sort_order` y `id` como desempate, tal
-como exige `docs/contrato-api.md`. Sigue sin haber endpoint HTTP.
+Declarar en un módulo nuevo, `app/states.py`, la tabla `states` como
+`sqlalchemy.Table` (Core, reflejando exactamente las columnas de la
+migración: `id`, `code`, `sort_order` — sin introducir una capa
+ORM/declarativa que nadie pidió) y una función que devuelva las filas
+ordenadas por `sort_order` y `id` como desempate, tal como exige
+`docs/contrato-api.md`. Sigue sin haber endpoint HTTP.
+
+Esta opción encaja con lo que ya existe: `app/database.py` está acotado a la
+conexión genérica (`get_database_url()`, el `Engine`, `get_connection()`) y
+no declara ninguna tabla ni conoce el dominio `states`; aislar la tabla y su
+lectura en `app/states.py` mantiene esa separación, igual que la migración
+`94f759f184a1` ya vive en su propio archivo dedicado a ese mismo catálogo.
 
 **Comprobación (aislada):** un test que, contra la base ya sembrada por la
 migración (`uv run alembic upgrade head`), llama directamente a esa función
