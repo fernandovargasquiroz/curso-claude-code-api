@@ -24,6 +24,13 @@ read it before assuming a command; don't duplicate its contents here.
   default `/var/lib/postgresql/data`). It renders with `docker compose config`
   without requiring a `.env` file — all `POSTGRES_*` variables have inline
   defaults matching `.env.example`.
+- `alembic/` holds migrations; `app/database.py::get_database_url()` builds the
+  connection URL from the same `POSTGRES_*` env vars (loaded via
+  `python-dotenv`, never read directly), defaulting host to `localhost`
+  since the API runs on the host, not in a container. `alembic/env.py` calls
+  it instead of reading `sqlalchemy.url` from `alembic.ini`. The first
+  migration creates and seeds the fixed `states` catalog — see
+  `docs/contrato-api.md`.
 
 ## Repository state
 
