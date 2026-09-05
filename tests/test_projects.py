@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.states import list_states
 
 client = TestClient(app)
 
@@ -56,3 +57,16 @@ def test_patch_project_returns_404_for_missing_id():
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Proyecto no encontrado"}
+
+
+def test_delete_project_with_tasks_returns_409():
+    project = client.post("/projects", json={"name": "Con tareas"}).json()
+    state_id = list_states()[0].id
+    client.post(
+        "/tasks",
+        json={"title": "Tarea existente", "project_id": project["id"], "state_id": state_id},
+    )
+
+    response = client.delete(f"/projects/{project['id']}")
+
+    assert response.status_code == 409
