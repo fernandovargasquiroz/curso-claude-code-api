@@ -3,6 +3,14 @@ from pydantic import BaseModel
 
 from app.projects import create_project, get_project, list_projects, update_project
 from app.states import list_states
+from app.tasks import (
+    TaskValidationError,
+    create_task,
+    delete_task,
+    get_task,
+    list_tasks,
+    update_task,
+)
 
 app = FastAPI()
 
@@ -19,6 +27,30 @@ class ProjectUpdate(BaseModel):
 
 def _serialize_project(project) -> dict[str, int | str | None]:
     return {"id": project.id, "name": project.name, "description": project.description}
+
+
+class TaskCreate(BaseModel):
+    title: str
+    description: str | None = None
+    project_id: int
+    state_id: int
+
+
+class TaskUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    project_id: int | None = None
+    state_id: int | None = None
+
+
+def _serialize_task(task) -> dict[str, int | str | None]:
+    return {
+        "id": task.id,
+        "title": task.title,
+        "description": task.description,
+        "project_id": task.project_id,
+        "state_id": task.state_id,
+    }
 
 
 @app.get("/health")
@@ -59,3 +91,56 @@ def update_project_endpoint(
     if project is None:
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
     return _serialize_project(project)
+
+
+@app.post("/tasks", status_code=201)
+def create_task_endpoint(payload: TaskCreate) -> dict[str, int | str | None]:
+    try:
+        task = create_task(
+            title=payload.title,
+            project_id=payload.project_id,
+            state_id=payload.state_id,
+            description=payload.description,
+        )
+    except TaskValidationError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return _serialize_task(task)
+
+
+@app.get("/tasks")
+def tasks(
+    project_id: int | None = None, state_id: int | None = None
+) -> list[dict[str, int | str | None]]:
+    return [
+        _serialize_task(task)
+        for task in list_tasks(project_id=project_id, state_id=state_id)
+    ]
+
+
+@app.get("/tasks/{task_id}")
+def get_task_endpoint(task_id: int) -> dict[str, int | str | None]:
+    task = get_task(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    return _serialize_task(task)
+
+
+@app.delete("/tasks/{task_id}", status_code=204)
+def delete_task_endpoint(task_id: int) -> None:
+    if not delete_task(task_id):
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    return None
+
+
+@app.patch("/tasks/{task_id}")
+def update_task_endpoint(
+    task_id: int, payload: TaskUpdate
+) -> dict[str, int | str | None]:
+    fields = payload.model_dump(exclude_unset=True)
+    try:
+        task = update_task(task_id, **fields)
+    except TaskValidationError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    if task is None:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    return _serialize_task(task)
