@@ -21,3 +21,9 @@ def list_states() -> list[Row]:
     )
     with engine.connect() as connection:
         return connection.execute(statement).fetchall()
+
+
+def get_state(state_id: int) -> Row | None:
+    statement = select(states_table).where(states_table.c.id == state_id)
+    with engine.connect() as connection:
+        return connection.execute(statement).one_or_none()
