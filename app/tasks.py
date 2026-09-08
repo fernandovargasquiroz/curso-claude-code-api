@@ -34,6 +34,7 @@ tasks_table = Table(
     Column("project_id", Integer, ForeignKey("projects.id"), nullable=False),
     Column("state_id", Integer, ForeignKey("states.id"), nullable=False),
     Column("due_at", DateTime(timezone=True), nullable=True),
+    Column("priority", Integer, nullable=True),
 )
 
 
@@ -55,6 +56,7 @@ def create_task(
     state_id: int,
     description: str | None = None,
     due_at: datetime | None = None,
+    priority: int | None = None,
 ) -> Row:
     _validate_references(project_id, state_id)
     _validate_due_at(due_at)
@@ -67,6 +69,7 @@ def create_task(
             project_id=project_id,
             state_id=state_id,
             due_at=due_at,
+            priority=priority,
         )
         .returning(tasks_table)
     )

@@ -318,3 +318,43 @@ def test_get_tasks_overdue_filter():
 
     assert response.status_code == 200
     assert {t["id"] for t in response.json()} == {overdue_task["id"]}
+
+
+def test_get_tasks_overdue_filter_is_case_sensitive():
+    project = _create_project("Vencidas case sensitive")
+    not_done_state = _state_id_other_than("HECHA")
+    past = (datetime.now(UTC) - timedelta(days=1)).isoformat()
+    future = (datetime.now(UTC) + timedelta(days=1)).isoformat()
+
+    overdue_task = client.post(
+        "/tasks",
+        json={
+            "title": "Vencida",
+            "project_id": project["id"],
+            "state_id": not_done_state,
+            "due_at": past,
+        },
+    ).json()
+    future_task = client.post(
+        "/tasks",
+        json={
+            "title": "Futura",
+            "project_id": project["id"],
+            "state_id": not_done_state,
+            "due_at": future,
+        },
+    ).json()
+
+    exact_lowercase = client.get(
+        "/tasks", params={"project_id": project["id"], "overdue": "true"}
+    )
+    assert exact_lowercase.status_code == 200
+    assert {t["id"] for t in exact_lowercase.json()} == {overdue_task["id"]}
+
+    for variant in ("True", "TRUE", "tRuE"):
+        response = client.get(
+            "/tasks", params={"project_id": project["id"], "overdue": variant}
+        )
+        assert response.status_code == 200
+        ids = {t["id"] for t in response.json()}
+        assert ids == {overdue_task["id"], future_task["id"]}
