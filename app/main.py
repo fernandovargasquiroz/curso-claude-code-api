@@ -127,11 +127,13 @@ def create_task_endpoint(payload: TaskCreate) -> dict[str, int | str | None]:
 def tasks(
     project_id: int | None = None,
     state_id: int | None = None,
-    overdue: bool = False,
+    overdue: str | None = None,
 ) -> list[dict[str, int | str | None]]:
     return [
         _serialize_task(task)
-        for task in list_tasks(project_id=project_id, state_id=state_id, overdue=overdue)
+        for task in list_tasks(
+            project_id=project_id, state_id=state_id, overdue=overdue == "true"
+        )
     ]
 
 
