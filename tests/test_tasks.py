@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -12,6 +14,14 @@ def _create_project(name: str) -> dict:
 
 def _existing_state_id() -> int:
     return list_states()[0].id
+
+
+def _state_id_with_code(code: str) -> int:
+    return next(state.id for state in list_states() if state.code == code)
+
+
+def _state_id_other_than(code: str) -> int:
+    return next(state.id for state in list_states() if state.code != code)
 
 
 def test_create_task_returns_201_with_created_resource():
@@ -182,3 +192,129 @@ def test_delete_task_returns_404_for_missing_id():
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Tarea no encontrada"}
+
+
+def test_create_task_without_due_at_serializes_null():
+    project = _create_project("Sin due_at")
+    state_id = _existing_state_id()
+
+    response = client.post(
+        "/tasks",
+        json={"title": "Sin fecha", "project_id": project["id"], "state_id": state_id},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["due_at"] is None
+
+
+def test_create_task_serializes_due_at_as_utc_with_z_suffix():
+    project = _create_project("Con due_at")
+    state_id = _existing_state_id()
+
+    response = client.post(
+        "/tasks",
+        json={
+            "title": "Con fecha",
+            "project_id": project["id"],
+            "state_id": state_id,
+            "due_at": "2026-03-01T11:00:00+02:00",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["due_at"] == "2026-03-01T09:00:00Z"
+
+
+def test_create_task_returns_422_for_naive_due_at():
+    project = _create_project("Due_at ambiguo")
+    state_id = _existing_state_id()
+
+    response = client.post(
+        "/tasks",
+        json={
+            "title": "Ambigua",
+            "project_id": project["id"],
+            "state_id": state_id,
+            "due_at": "2026-03-01T09:00:00",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_patch_task_updates_due_at_with_utc_serialization():
+    project = _create_project("Patch due_at")
+    state_id = _existing_state_id()
+    created = client.post(
+        "/tasks",
+        json={"title": "Original", "project_id": project["id"], "state_id": state_id},
+    ).json()
+
+    response = client.patch(
+        f"/tasks/{created['id']}", json={"due_at": "2026-03-01T11:00:00+02:00"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["due_at"] == "2026-03-01T09:00:00Z"
+
+
+def test_patch_task_returns_422_for_naive_due_at():
+    project = _create_project("Patch due_at ambiguo")
+    state_id = _existing_state_id()
+    created = client.post(
+        "/tasks",
+        json={"title": "Tarea", "project_id": project["id"], "state_id": state_id},
+    ).json()
+
+    response = client.patch(
+        f"/tasks/{created['id']}", json={"due_at": "2026-03-01T09:00:00"}
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_tasks_overdue_filter():
+    project = _create_project("Vencidas endpoint")
+    not_done_state = _state_id_other_than("HECHA")
+    done_state = _state_id_with_code("HECHA")
+    past = (datetime.now(UTC) - timedelta(days=1)).isoformat()
+    future = (datetime.now(UTC) + timedelta(days=1)).isoformat()
+
+    overdue_task = client.post(
+        "/tasks",
+        json={
+            "title": "Vencida",
+            "project_id": project["id"],
+            "state_id": not_done_state,
+            "due_at": past,
+        },
+    ).json()
+    client.post(
+        "/tasks",
+        json={
+            "title": "Vencida pero hecha",
+            "project_id": project["id"],
+            "state_id": done_state,
+            "due_at": past,
+        },
+    )
+    client.post(
+        "/tasks",
+        json={"title": "Sin fecha", "project_id": project["id"], "state_id": not_done_state},
+    )
+    client.post(
+        "/tasks",
+        json={
+            "title": "Futura",
+            "project_id": project["id"],
+            "state_id": not_done_state,
+            "due_at": future,
+        },
+    )
+
+    response = client.get(
+        "/tasks", params={"project_id": project["id"], "overdue": "true"}
+    )
+
+    assert response.status_code == 200
+    assert {t["id"] for t in response.json()} == {overdue_task["id"]}

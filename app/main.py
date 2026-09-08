@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -34,6 +36,7 @@ class TaskCreate(BaseModel):
     description: str | None = None
     project_id: int
     state_id: int
+    due_at: datetime | None = None
 
 
 class TaskUpdate(BaseModel):
@@ -41,6 +44,13 @@ class TaskUpdate(BaseModel):
     description: str | None = None
     project_id: int | None = None
     state_id: int | None = None
+    due_at: datetime | None = None
+
+
+def _serialize_due_at(due_at: datetime | None) -> str | None:
+    if due_at is None:
+        return None
+    return due_at.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _serialize_task(task) -> dict[str, int | str | None]:
@@ -50,6 +60,7 @@ def _serialize_task(task) -> dict[str, int | str | None]:
         "description": task.description,
         "project_id": task.project_id,
         "state_id": task.state_id,
+        "due_at": _serialize_due_at(task.due_at),
     }
 
 
@@ -101,6 +112,7 @@ def create_task_endpoint(payload: TaskCreate) -> dict[str, int | str | None]:
             project_id=payload.project_id,
             state_id=payload.state_id,
             description=payload.description,
+            due_at=payload.due_at,
         )
     except TaskValidationError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
@@ -109,11 +121,13 @@ def create_task_endpoint(payload: TaskCreate) -> dict[str, int | str | None]:
 
 @app.get("/tasks")
 def tasks(
-    project_id: int | None = None, state_id: int | None = None
+    project_id: int | None = None,
+    state_id: int | None = None,
+    overdue: bool = False,
 ) -> list[dict[str, int | str | None]]:
     return [
         _serialize_task(task)
-        for task in list_tasks(project_id=project_id, state_id=state_id)
+        for task in list_tasks(project_id=project_id, state_id=state_id, overdue=overdue)
     ]
 
 
