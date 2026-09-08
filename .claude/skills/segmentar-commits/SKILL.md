@@ -85,6 +85,10 @@ aprobación.
 
 ## Reglas fijas (no negociables)
 
+- Cada commit se arma exclusivamente con `git add` (archivo completo) o
+  `git add -p` (fragmentos) sobre el cambio que ya existe en el working
+  tree. Nunca se edita, reescribe ni regenera el contenido de un archivo
+  para construir o simular un estado intermedio.
 - `.env` nunca entra en ningún commit (`docs/decisiones-ingenieria.md`).
 - Nunca `git push`, `git add -A` / `git add .`, `--amend`, ni reescritura de
   historia.
@@ -94,6 +98,6 @@ aprobación.
 
 ## Límite
 
-Esta skill no decide qué cambiar en el código: solo reparte en commits lo
-que ya existe en el working tree. No hace `git push` bajo ninguna
-circunstancia.
+Esta skill no decide qué cambiar en el código, ni lo edita ni lo reescribe:
+solo reparte con `git add` (completo o `-p`) lo que ya existe en el working
+tree. No hace `git push` bajo ninguna circunstancia.
