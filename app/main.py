@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.projects import create_project, get_project, list_projects, update_project
 from app.states import list_states
@@ -37,6 +37,7 @@ class TaskCreate(BaseModel):
     project_id: int
     state_id: int
     due_at: datetime | None = None
+    priority: int | None = Field(default=None, ge=1, le=5)
 
 
 class TaskUpdate(BaseModel):
@@ -45,6 +46,7 @@ class TaskUpdate(BaseModel):
     project_id: int | None = None
     state_id: int | None = None
     due_at: datetime | None = None
+    priority: int | None = Field(default=None, ge=1, le=5)
 
 
 def _serialize_due_at(due_at: datetime | None) -> str | None:
@@ -61,6 +63,7 @@ def _serialize_task(task) -> dict[str, int | str | None]:
         "project_id": task.project_id,
         "state_id": task.state_id,
         "due_at": _serialize_due_at(task.due_at),
+        "priority": task.priority,
     }
 
 
@@ -113,6 +116,7 @@ def create_task_endpoint(payload: TaskCreate) -> dict[str, int | str | None]:
             state_id=payload.state_id,
             description=payload.description,
             due_at=payload.due_at,
+            priority=payload.priority,
         )
     except TaskValidationError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
