@@ -27,5 +27,21 @@
   "attribution": {
     "commit": "",
     "pr": ""
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-openapi-sync.sh",
+            "if": "Bash(git commit *)",
+            "timeout": 15,
+            "statusMessage": "Verificando que openapi.json coincida con el código..."
+          }
+        ]
+      }
+    ]
   }
 }
