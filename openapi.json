@@ -8,6 +8,7 @@
     "/health": {
       "get": {
         "summary": "Health",
+        "description": "Confirma que el servicio está arriba.",
         "operationId": "health_health_get",
         "responses": {
           "200": {
