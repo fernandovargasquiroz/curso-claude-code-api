@@ -107,7 +107,7 @@ def _serialize_task(task) -> dict[str, int | str | None]:
     }
 
 
-@app.get("/health")
+@app.get("/health", description="Confirma que el servicio está arriba.")
 def health() -> HealthOut:
     return {"status": "ok"}
 
