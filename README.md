@@ -58,3 +58,11 @@ El contrato de comportamiento observable vive en `docs/contrato-api.md`.
    ```bash
    docker compose down
    ```
+
+## Especificación OpenAPI
+
+FastAPI la genera sola a partir de las rutas; se regenera en `openapi.json`, sin levantar el servidor ni tocar la base de datos:
+
+```bash
+uv run python -c "import json; from app.main import app; json.dump(app.openapi(), open('openapi.json', 'w'), indent=2, ensure_ascii=False)"
+```

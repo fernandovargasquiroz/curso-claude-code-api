@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, MetaData, String, Table, insert, select, update
+from sqlalchemy import Integer, MetaData, String, Table, delete, insert, select, update
 from sqlalchemy.engine import Row
 from sqlalchemy.schema import Column
 
@@ -52,3 +52,11 @@ def update_project(project_id: int, **fields: str | None) -> Row | None:
         row = connection.execute(statement).one_or_none()
         connection.commit()
         return row
+
+
+def delete_project(project_id: int) -> bool:
+    statement = delete(projects_table).where(projects_table.c.id == project_id)
+    with engine.connect() as connection:
+        result = connection.execute(statement)
+        connection.commit()
+        return result.rowcount > 0

@@ -96,7 +96,7 @@ en cascada implícito.
 
 ## Tareas v1
 
-Campos: `id`, `title`, `description` opcional, `project_id`, `state_id`.
+Campos: `id`, `title`, `description` opcional, `project_id`, `state_id`, `priority` opcional entre `1` y `5`.
 
 | Método y ruta | Comportamiento |
 |---|---|
