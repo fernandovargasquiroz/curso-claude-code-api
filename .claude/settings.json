@@ -42,6 +42,19 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/regenerate-openapi-on-edit.sh",
+            "timeout": 15,
+            "statusMessage": "Regenerando openapi.json tras editar app/main.py..."
+          }
+        ]
+      }
     ]
   }
 }
